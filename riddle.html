@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Treffpunkt Amsterdam</title>
+  <style>
+    :root{--bg:#f4f6f8;--card:#fff;--accent:#2b6cb0}
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial}
+    body{background:var(--bg);display:flex;align-items:center;justify-content:center;padding:32px}
+    .wrap{max-width:760px;width:100%}
+    .card{background:var(--card);border-radius:12px;padding:28px;box-shadow:0 8px 30px rgba(11,12,16,0.06)}
+    h1{margin:0 0 8px 0;font-size:20px}
+    p.lead{margin:0 0 18px 0;color:#475569}
+    .stanza{padding:16px;border-radius:8px;border:1px dashed rgba(15,23,42,0.06);margin-bottom:14px}
+    .stanza.hidden{display:none}
+    .lines{line-height:1.6;margin-bottom:10px;color:#0f172a}
+    .controls{display:flex;gap:8px;align-items:center}
+    input[type="text"],input[type="password"]{flex:1;padding:8px 10px;border-radius:8px;border:1px solid #e2e8f0}
+    button{padding:8px 12px;border-radius:8px;border:0;background:var(--accent);color:#fff;cursor:pointer}
+    .msg{margin-top:8px;color:#0f172a}
+    .success{color:green}
+    .small{font-size:13px;color:#475569}
+    footer{margin-top:14px;font-size:13px;color:#6b7280}
+    .hint{font-style:italic;color:#6b7280}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Treffpunkt Amsterdam</h1>
+      <p class="lead">Het raadsel zal vertellen waar je heen moet..</p>
+
+      <!-- STANZA 1 -->
+      <div id="stanza-1" class="stanza">
+        <div class="lines">
+          <div>Bij ’t oudste huis van geloof en zang,  </div>
+          <div>waar stilte heerst, begint gij gang,  </div>
+          <div>daar staat een vrouw, de <i>mooie</i> geheet’,  </div>
+          <div>zeg mij haar naam en zie waarheen je verder treedt.</div>
+        </div>
+        <div class="controls">
+          <input id="input-1" type="password" placeholder="Answer for stanza 1">
+          <button onclick="checkAnswer(1)">Submit</button>
+        </div>
+        <div id="msg-1" class="msg"></div>
+      </div>
+
+      <!-- STANZA 2 -->
+      <div id="stanza-2" class="stanza hidden">
+        <div class="lines">
+          <div>Haar wereld wordt verteld in ’t huis van rood en glas,  </div>
+          <div>waar elke kamer toont wie zij werkelijk was.  </div>
+          <div>Vlakbij een brug, genoemd naar <i>Majoor</i> met kracht,  </div>
+          <div>noteer de <i>naam</i> die op het bord daar zachtjes lacht.</div>
+        </div>
+        <div class="controls">
+          <input id="input-2" type="text" placeholder="Answer for stanza 2">
+          <button onclick="checkAnswer(2)">Submit</button>
+        </div>
+        <div id="msg-2" class="msg"></div>
+      </div>
+
+      <!-- STANZA 3 -->
+      <div id="stanza-3" class="stanza hidden">
+        <div class="lines">
+          <div>Van klokken oud naar <i>nieuwer</i> getier,</div>
+          <div>naast een ander' <i>kerk</i> wacht goudbruin plezier.</div>
+          <div>Het huis draagt de naam van een <i>ons bekende stad</i></div>
+          <div>Geef mij haar naam, en ik zeg of gij verder mag.</div>
+        </div>
+        <div class="controls">
+          <input id="input-3" type="text" placeholder="Answer for stanza 3">
+          <button onclick="checkAnswer(3)">Submit</button>
+        </div>
+        <div id="msg-3" class="msg"></div>
+      </div>
+
+      <!-- FINAL -->
+      <div id="final" class="stanza hidden">
+            <h2>Geslaagd!</h2>
+			<p>Loop naar links richting Paleisstraat en neem een drankje bij <b>Van Daele</b>. </p>
+      </div>
+
+      <footer>
+        <div class="small"></div>
+      </footer>
+    </div>
+  </div>
+  
+  <script>
+    // All functions defined here are assigned to window so inline onclick handlers can access them
+
+    // ---------- CONFIG ----------
+    const STANZA_HASHES = {
+      1: ['0fe7c9ef9683fcb85c7fecbcc9311abf97601b4517a6486ff70fb96ac472c906'],
+      2: ['46978b8aeec41518afe153841d80fe9fb75ee7605924f33326f300ab439eba52'],
+      3: ['b6df0309093c603b3c22b6fdf35a524ea791155a5c3e29d1a932b0efd69d7f53','1cfb40b28cf987efbe39cba31d70266584cf055ed4fa3f8bea9df51c23cec953', 'd44958a80fac2ee9465b325f00670ada460834fb4406fe31c0ba85fade3e9190', 'e9d5d2398bd2264c73d9ff2cb7eecad78effe1c42b6ffa50c53abbf0a86aeced']
+    };
+    const PROGRESS_KEY = 'poem_progress_stage';
+
+    // ---------- HELPERS ----------
+    async function sha256Hex(message) {
+      const msgUint8 = new TextEncoder().encode(message);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function showStanza(n) {
+      const el = document.getElementById('stanza-' + n);
+      if (el) el.classList.remove('hidden');
+    }
+
+    function unlockStanza(n) {
+      if (n <= 3) showStanza(n);
+      localStorage.setItem(PROGRESS_KEY, String(n));
+    }
+
+    function getSavedProgress() {
+      const val = parseInt(localStorage.getItem(PROGRESS_KEY) || '1', 10);
+      return isNaN(val) ? 1 : val;
+    }
+
+    // Expose sha256Hex for debugging if needed
+    window.sha256Hex = sha256Hex;
+
+    // ---------- CHECKING LOGIC ----------
+    async function checkAnswer(stanzaIndex) {
+      try {
+        const inputEl = document.getElementById('input-' + stanzaIndex);
+        const msgEl = document.getElementById('msg-' + stanzaIndex);
+        if (!inputEl) {
+          console.error('input element not found for stanza', stanzaIndex);
+          return;
+        }
+
+        const raw = (inputEl.value || '').toString().trim().toLowerCase();
+        if (!raw) {
+          if (msgEl) msgEl.textContent = 'Please enter an answer.';
+          return;
+        }
+
+        if (msgEl) {
+          msgEl.textContent = 'Checking...';
+          msgEl.classList.remove('success');
+        }
+
+        const hash = await sha256Hex(raw);
+
+        const possible = STANZA_HASHES[stanzaIndex];
+        const isCorrect = Array.isArray(possible) ? possible.includes(hash) : (hash === possible);
+
+        if (isCorrect) {
+          if (msgEl) {
+            msgEl.textContent = '✅ Correct!';
+            msgEl.classList.add('success');
+          }
+
+          const next = stanzaIndex + 1;
+          if (next <= 3) {
+            setTimeout(() => {
+              unlockStanza(next);
+              const el = document.getElementById('stanza-' + next);
+              if (el) el.scrollIntoView({behavior: 'smooth', block: 'center'});
+            }, 500);
+          } else {
+            setTimeout(() => {
+              const finalEl = document.getElementById('final');
+              if (finalEl) finalEl.classList.remove('hidden');
+              if (finalEl) finalEl.scrollIntoView({behavior: 'smooth', block: 'center'});
+            }, 500);
+          }
+
+          const cur = getSavedProgress();
+          const newProgress = Math.max(cur, next);
+          localStorage.setItem(PROGRESS_KEY, String(newProgress));
+        } else {
+          if (msgEl) {
+            msgEl.textContent = '❌ Wrong — try again.';
+            msgEl.classList.remove('success');
+          }
+        }
+      } catch (err) {
+        console.error('Error in checkAnswer:', err);
+        const msgEl = document.getElementById('msg-' + stanzaIndex);
+        if (msgEl) msgEl.textContent = 'An error occurred. Open the console for details.';
+      }
+    }
+
+    // Make the function available to inline onclick handlers
+    window.checkAnswer = checkAnswer;
+
+    // ---------- INIT ----------
+    (function init() {
+      showStanza(1);
+      const progress = getSavedProgress();
+      if (progress >= 2) showStanza(2);
+      if (progress >= 3) showStanza(3);
+      if (progress >= 4) {
+        const finalEl = document.getElementById('final');
+        if (finalEl) finalEl.classList.remove('hidden');
+      }
+
+      [1,2,3].forEach(i => {
+        const el = document.getElementById('input-' + i);
+        if (!el) return;
+        el.addEventListener('keydown', function(e){ if (e.key === 'Enter') checkAnswer(i); });
+      });
+    })();
+  </script>
+  
+</body>
+</html>

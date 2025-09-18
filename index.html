@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Password Gate</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 2em; }
+    input, button { padding: 0.5em; margin: 0.5em; }
+    #message { color: red; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h2>Enter password to continue</h2>
+  <input type="password" id="fakePassword" placeholder="Password">
+  <button onclick="checkFakePassword()">Submit</button>
+  <div id="message"></div>
+  <br>
+  <button onclick="location.href='riddle.html'">Forgot password?</button>
+
+  <script>
+    function checkFakePassword() {
+      document.getElementById("message").innerText = "Password incorrect";
+    }
+  </script>
+</body>
+</html>
