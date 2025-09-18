@@ -153,7 +153,7 @@
 
         if (isCorrect) {
           if (msgEl) {
-            msgEl.textContent = '✅ Correct!';
+            msgEl.textContent = '✅ Goed!';
             msgEl.classList.add('success');
           }
 
@@ -177,7 +177,7 @@
           localStorage.setItem(PROGRESS_KEY, String(newProgress));
         } else {
           if (msgEl) {
-            msgEl.textContent = '❌ Wrong — try again.';
+            msgEl.textContent = '❌ Fout!';
             msgEl.classList.remove('success');
           }
         }
